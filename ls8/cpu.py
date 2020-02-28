@@ -11,6 +11,12 @@ SUB = 0b10100001
 HLT = 0b00000001
 PSH = 0b01000101
 POP = 0b01000110
+CLL = 0b01010000
+RET = 0b00010001
+CMP = 0b10100111
+JMP = 0b01010100
+JNE = 0b01010110
+JEQ = 0b01010101
 
 class CPU:
     """Main CPU class."""
@@ -22,6 +28,7 @@ class CPU:
         self.pc = 0
         self.halt = False
         self.sp = 7
+        self.FL = 0b00000000 #`FL` bits: `00000LGE`
 
         # self.SP = self.reg[7]
 
@@ -33,7 +40,13 @@ class CPU:
             SUB: self.SUB,
             HLT: self.HLT,
             PSH: self.PSH,
-            POP: self.POP
+            POP: self.POP,
+            CLL: self.CLL,
+            RET: self.RET,
+            CMP: self.CMP,
+            JMP: self.JMP,
+            JNE: self.JNE,
+            JEQ: self.JEQ
         }
         
 
@@ -123,6 +136,17 @@ class CPU:
                 self.halt = True
             else:
                 self.reg[reg_a] /= self.reg[reg_b]
+        
+        elif op == 'CMP':
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.FL = 0b00000001
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.FL = 0b00000100
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.FL = 0b00000010
+            else:
+                print('error')
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -140,7 +164,42 @@ class CPU:
         self.reg[reg_num] = val
         self.reg[self.sp] += 1
   
-        self.pc += 2
+        self.pc += 3
+
+    def CLL(self):
+        self.reg[self.sp] -= 1
+        self.ram[self.reg[self.sp]] = self.pc + 2
+        reg_num = self.ram[self.pc + 1]
+        self.pc = self.reg[reg_num]
+
+        self.pc += 3
+
+    def RET(self):
+        self.pc= self.ram[self.reg[self.sp]]
+        self.reg[self.sp] += 1
+
+        self.pc += 3
+
+    def CMP(self):
+        self.alu('CMP')
+
+        self.pc += 3
+
+    def JMP(self):
+        register = self.ram_read(self.pc + 1)
+        self.pc = self.reg[register]
+
+    def JNE(self):
+        if self.FL != 0b00000001:
+            self.JMP()
+        else:
+            self.pc += 2
+
+    def JEQ(self):
+        if self.FL == 0b00000001:
+            self.JMP()
+        else:
+            self.pc += 2
 
     def trace(self):
         """
@@ -189,5 +248,6 @@ class CPU:
                 self.branchtable[IR]()
 
             else:
-                print('Unknown instruction')
+                print(f'Unknown instruction {self.pc} {self.ram[self.pc]}')
+                # self.trace()
                 sys.exit()
