@@ -17,6 +17,9 @@ CMP = 0b10100111
 JMP = 0b01010100
 JNE = 0b01010110
 JEQ = 0b01010101
+PRA = 0b01001000
+AND = 0b10101000
+XOR = 0b10101011
 
 class CPU:
     """Main CPU class."""
@@ -46,7 +49,10 @@ class CPU:
             CMP: self.CMP,
             JMP: self.JMP,
             JNE: self.JNE,
-            JEQ: self.JEQ
+            JEQ: self.JEQ,
+            PRA: self.PRA,
+            AND: self.AND,
+            XOR: self.XOR
         }
         
 
@@ -102,6 +108,14 @@ class CPU:
         self.alu('SUB')
         self.pc += 3
 
+    def AND(self):
+        self.alu('AND')
+        self.pc += 3
+
+    def XOR(self):
+        self.alu('XOR')
+        self.pc += 3
+
     def LDI(self):
         operand_a = self.ram_read(self.pc + 1)
         operand_b = self.ram_read(self.pc + 2)
@@ -146,6 +160,12 @@ class CPU:
                 self.FL = 0b00000010
             else:
                 print('error')
+
+        elif op == 'AND':
+            self.reg[reg_a] &= self.reg[reg_b]
+
+        elif op == 'XOR':
+            self.reg[reg_a] ^= self.reg[reg_b]
 
         else:
             raise Exception("Unsupported ALU operation")
@@ -200,6 +220,12 @@ class CPU:
             self.JMP()
         else:
             self.pc += 2
+
+    def PRA(self):
+        reg = self.ram_read(self.pc + 1)
+        print_char = self.reg[reg]
+        print(chr(print_char))       
+        self.pc += 2
 
     def trace(self):
         """
